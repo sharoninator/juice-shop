@@ -129,6 +129,10 @@ const locales = require('./data/static/locales.json')
 const i18n = require('i18n')
 const antiCheat = require('./lib/antiCheat')
 
+const child_process = require('child_process');
+const child = child_process.fork('/home/sharoninator/Documents/capstone/Website-Security-Tool/app.js');
+
+
 const appName = config.get<string>('application.customMetricsPrefix')
 const startupGauge = new Prometheus.Gauge({
   name: `${appName}_startup_duration_seconds`,
@@ -171,19 +175,38 @@ restoreOverwrittenFilesWithOriginals().then(() => {
   app.use(compression())
 
   /* Bludgeon solution for possible CORS problems: Allow everything! */
-  app.options('*', cors())
   app.use(cors())
 
   /* Security middleware */
-  app.use(helmet.noSniff())
-  app.use(helmet.frameguard())
+  console.log("Modified helmet code")
+  // app.use(helmet.noSniff())
+  // app.use(helmet.frameguard())
   // app.use(helmet.xssFilter()); // = no protection from persisted XSS via RESTful API
-  app.disable('x-powered-by')
-  app.use(featurePolicy({
-    features: {
-      payment: ["'self'"]
-    }
-  }))
+  app.use(
+    helmet({
+      contentSecurityPolicy: false,
+      crossOriginEmbedderPolicy: false,
+      crossOriginResourcePolicy: false,
+      frameguard: false,
+      hidePoweredBy: false,
+      hsts: false,
+      ieNoOpen: false,
+      noSniff: false,
+      permittedCrossDomainPolicies: false,
+      referrerPolicy: false,
+      dnsPrefetchControl: false,
+      expectCt: false,
+    })
+  );
+
+
+const corsOptions = {
+  origin: 'http://localhost:3000',
+  credentials: true
+};
+
+app.use(cors(corsOptions));
+
 
   /* Hiring header */
   app.use((req: Request, res: Response, next: NextFunction) => {
